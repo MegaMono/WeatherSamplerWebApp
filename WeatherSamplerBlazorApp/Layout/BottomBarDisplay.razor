@@ -1,0 +1,30 @@
+﻿@using WeatherSamplerBlazorApp.Services
+@inject WeatherState WeatherState
+
+<div class="bottombar">
+
+    <div class="bottombar-header">
+
+        <span class="bottombar-title">Results from API call:</span>
+        <span class="json-label">Weather JSON</span>
+    </div>
+
+    <div class="bottombar-content">
+
+        <textarea readonly>@WeatherState.JsonResult</textarea>
+
+
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        WeatherState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        WeatherState.OnChange -= StateHasChanged;
+    }
+}

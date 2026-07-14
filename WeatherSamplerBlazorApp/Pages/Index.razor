@@ -1,0 +1,132 @@
+﻿@page "/"
+
+@using WeatherSamplerBlazorApp.Services
+@using WeatherSamplerBlazorApp.Models
+@inject ApiCaller ApiCaller
+@inject WeatherState WeatherState
+@inject IJSRuntime JS
+
+@* @using System.Diagnostics *@
+
+<div class="page-container">
+
+    <div class="controls">
+
+     <h1 style ="color:red">Weather Mood Sampler</h1>
+
+    <select @bind="selectedPlaceName" @onkeydown="HandleKeyDown">
+
+        @foreach (var place in PlaceStorage.GetPlaces())
+        {
+            <option value="@place.Name">@place.Name</option>
+        }
+    </select>
+
+    <button @onclick="FetchWeather">Climate Mood</button>
+
+    </div>
+
+    @if (showWeather)
+    {
+        <div class="weather-info">
+            <p>@lblWeather</p>
+            <p>@lblTemp</p>
+            <p>@lblFeelsLike</p>
+            <p>@lblHumidity</p>
+        </div>
+
+        <img src="@imagePath" class="weather-gif" />
+        <audio src="@soundPath" autoplay></audio>
+    }
+ 
+</div>
+
+@code {
+    private Place? selectedPlace;
+    private WeatherResult weatherResult = new();
+
+    private bool showWeather = false;
+
+    private string lblWeather = "";
+    private string lblTemp = "";
+    private string lblFeelsLike = "";
+    private string lblHumidity = "";
+
+    private string imagePath = "";
+    private string soundPath = "";
+
+    private string? selectedPlaceName;
+
+    private async Task FetchWeather()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(selectedPlaceName) || selectedPlaceName == "--Select a location--")
+            {
+                showWeather = false;
+
+                // Clear previous weather info
+                WeatherState.SetJson("");                
+                lblWeather = "";
+                lblTemp = "";
+                lblFeelsLike = "";
+                lblHumidity = "";
+                imagePath = "";
+                soundPath = "";
+
+                return;             
+            }
+
+            // Look up the Place object by name
+            selectedPlace = PlaceStorage.GetPlaces()
+                .FirstOrDefault(p => p.Name == selectedPlaceName);
+
+            if (selectedPlace == null) return;
+
+            double lat = selectedPlace.Lat;
+            double lon = selectedPlace.Lon;
+
+            // If location 0,0. Set to default.
+            if (lat == 0 && lon == 0) 
+            { 
+                showWeather = false;
+                WeatherState.SetJson("");
+                return; 
+            }
+
+            string jsonResult = await ApiCaller.GetWeatherAsync(lat, lon);          
+            
+            // Update the shared WeatherState for sidebar
+            WeatherState.SetJson(jsonResult);
+
+            // string icon = weatherResult.GetIcon(rawJson);
+
+            string icon = weatherResult.GetIcon(jsonResult);
+
+            lblTemp = $"Actual temperature: {weatherResult.GetActualTemp(jsonResult)}°F";
+            lblFeelsLike = $"Feels like temperature: {weatherResult.GetFeelsLikeTemp(jsonResult)}°F";
+            lblHumidity = $"Humidity: {weatherResult.GetHumidity(jsonResult)}%";
+
+            WeatherMedia media = new();
+            string condition = media.GetConditionLabel(icon);
+            lblWeather = $"Weather condition: {condition}";
+
+            imagePath = media.GetImagePath(icon);   // gifs/xxx.gif
+            soundPath = media.GetSoundPath(icon);   // audio/xxx.mp3
+                        
+            showWeather = true;
+        }
+
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex);
+        }
+    }
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await FetchWeather();
+        }
+    }
+}
