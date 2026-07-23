@@ -26,6 +26,13 @@ jobs:
         run: npm install @actions/core@1.6.0 @actions/http-client
 
 ### Test below
+    
+      - name: Check Build Output
+        run: |
+          echo "Searching for Blazor framework files..."
+          find . -name blazor.webassembly.js
+          echo "Searching for wwwroot folders..."
+          find . -type d -name wwwroot
       
       - name: Get Id Token
         uses: actions/github-script@v6
@@ -35,15 +42,7 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
-
-      - name: Check Build Output
-        run: |
-          echo "Searching for Blazor framework files..."
-          find . -name blazor.webassembly.js
-          echo "Searching for wwwroot folders..."
-          find . -type d -name wwwroot
-      
-      
+          
       # - name: Get Id Token
       #   uses: actions/github-script@v6
       #   id: idtoken
